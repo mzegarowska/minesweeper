@@ -87,13 +87,12 @@ int main () {
 
     score (Board, Difficulty);
     ///////////////////////////////////////////////////////////////////////////
-    char name[50];
     int tmp;
 
     while (HowManyToEnd(Board, Difficulty) < Board->Height * Board->Width - MineCount){
         int mode = 0;
         while (mode == 0){
-            printf("Enter mode:\n");
+            printf("Enter mode (r - move, f - flag):\n");
             tmp = getch();
             if (tmp == 114){
                 mode = 1;
@@ -125,7 +124,7 @@ int main () {
             if (make_move(Board, Row, Column) == 1){
                 printf("[!] This cell contains a bomb!\n");
                 print_board(Board);
-                score (Board, Difficulty);
+                score(Board, Difficulty);
                 break;
             }
         } else if (mode == 2) {
@@ -133,17 +132,15 @@ int main () {
         }
 
         print_board(Board);
-        score (Board, Difficulty);
+        score(Board, Difficulty);
     }
 
     if (HowManyToEnd(Board, Difficulty) == Board->Height * Board->Width - MineCount){
         Board->bWin = true;
     }
 
-    printf("Enter your nick:\n");
-    fgets(name, 50, stdin);
-
-    write_to_file(Board, HowManyToEnd(Board, Difficulty));
+    //write_to_file(Board, HowManyToEnd(Board, Difficulty));
+    best_results(HowManyToEnd(Board, Difficulty)*(Difficulty-47));
 
     ///////////////////////////////////////////////////////////////////////////
 
