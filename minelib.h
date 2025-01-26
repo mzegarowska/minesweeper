@@ -89,6 +89,10 @@ void flag_mode (board_t *Board, unsigned int ColumnIndex, unsigned int RowIndex)
 
 void write_to_file (board_t* Board, int points);
 
+int compare(const void* a, const void* b);
+
+void best_results(int points);
+
 ///////////////////////////////////////////////////////////////////////////
 
 #endif
