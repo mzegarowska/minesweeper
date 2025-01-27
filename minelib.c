@@ -299,7 +299,6 @@ int score (board_t *Board, int level){
         }
     }
     score *= (level-47);
-    printf("Your current score: %d\n", score);
     return score;
 }
 
@@ -317,29 +316,19 @@ void flag_mode (board_t *Board, unsigned int ColumnIndex, unsigned int RowIndex)
     flag_cell(&Board->Cells[get_cell_index(RowIndex, ColumnIndex, Board)]);
 }
 
-void write_to_file (board_t* Board, int points){ // DO DOKONCZENIA
-    char FileName[100];
-    printf("Enter name of the file:\n");
-    scanf("%s", FileName);
-    FILE* file = fopen(FileName, "w");
-    if (file == NULL){
-        printf("[!] Error: Can't access file!\n");
-    }
-    fprintf(file, "%d %d", Board->bWin, points);
-    fclose(file);
-}
-
-int compare(const void* a, const void* b){
-    int scoreA = *((int*)a);
-    int scoreB = *((int*)b);
-    return scoreA-scoreB;
+int compare_scores (const void* a, const void* b)
+{
+    return ((score_t *)b)->Score - (( score_t*)a)->Score;
 }
 
 void best_results(int points){ //show 5 best results (points, name)
-    char list[100][2];
-    char names[100][50];
-    int scores[100];
-    int counter=0;
+    
+    score_t *Scores = malloc(100*sizeof(score_t));
+    for (int i = 0; i < 100; i++) {
+        Scores[i].Score = 0;
+        Scores[i].Nick = "Example";
+    }
+    int counter = 0;
     char nick[50];
 
     printf("Enter your nick:\n");
@@ -349,7 +338,7 @@ void best_results(int points){ //show 5 best results (points, name)
         printf("[!] Error: Can't access the file!\n");
         return;
     }
-    fprintf(f, "\n%d %s", points, nick);
+    fprintf(f, "%d %s", points, nick);
     fclose(f);
 
     FILE* file = fopen("res.txt", "r");
@@ -357,17 +346,87 @@ void best_results(int points){ //show 5 best results (points, name)
         printf("[!] Error: Can't access the file!\n");
         return;
     }
-    while ( fscanf(file, "%d %s", &scores[counter], &names[counter]) == 2){
-        list[counter][0] = counter; //index
-        list[counter][1] = scores[counter]; 
+
+    int TempScore = 0;
+    while ( fscanf(file, "%d %s", &TempScore, nick) == 2){
+        Scores[counter].Nick = malloc(50*sizeof(char));
+        for (int i = 0; i < 50; i++) {
+            Scores[counter].Nick[i] = nick[i];
+        }
+        Scores[counter].Score = TempScore;
         counter++;
     }
     fclose(file);
-    qsort(list, counter, sizeof(list[0]), compare);
+    qsort(Scores, counter, sizeof(score_t), compare_scores);
 
     printf("\n    TOP 5   \n");
     for (int i=0; i<counter && i<5; i++){
-        int index = list[i][0];
-        printf("%d. %s - %dxp\n", i+1, names[index], list[i][1]);
+        printf("%d. %s - %dxp\n", i+1, Scores[i].Nick, Scores[i].Score);
     }
+
+    for(int i = 0; i < counter; i++) {
+        free(Scores[i].Nick);
+    }
+    free(Scores);
+}
+
+void game_from_file (FILE *Stream) {
+    if (Stream == NULL) {
+        fprintf(stderr, "[!] Error: Can't access file!\n");
+        return;
+    }
+
+    unsigned int BoardWidth = 0;
+    unsigned int BoardHeight = 0;
+
+    fscanf(Stream, "HEIGHT = %d", &BoardHeight);
+    fscanf(Stream, "\nWIDTH = %d", &BoardWidth);
+
+    if (BoardHeight <= 0 || BoardWidth <= 0) {
+        fprintf(stderr, "[!] Error: Invalid board dimensions!\n");
+        return;
+    }
+
+    char InputBuffer[1024];
+
+    fscanf(Stream, "\nMINES = %s", InputBuffer);
+
+    board_t *Board = generate_board(BoardHeight, BoardWidth);
+
+    for (int i = 0; i < strlen(InputBuffer); i++) {
+        if (InputBuffer[i] == '0') {
+            continue;
+        } else if (InputBuffer[i] == '1') {
+            Board->Cells[i].bHasMine = true;
+        } else {
+            fprintf(stderr, "[!] Error: Invalid character in mines string - must be 0 or 1!\n");
+            return;
+        }
+    }
+
+    count_mines(Board);
+
+    unsigned int RowIndex = 0;
+    unsigned int ColumnIndex = 0;
+
+    while(fscanf(Stream, "\nM %d %d", &RowIndex, &ColumnIndex) == 2) {
+        Sleep(250);
+        system("cls");
+        reveal(&Board->Cells[RowIndex * BoardWidth + ColumnIndex], Board);
+        if (Board->Cells[RowIndex * BoardWidth + ColumnIndex].bHasMine == true) {
+            print_board(Board);
+            printf("Game over!\n");
+            return;
+        } else {
+            print_board(Board);
+        }
+    }
+
+    system("cls");
+    printf("Game result:\n");
+    print_board(Board);
+
+    free_board(Board);
+
+    return;
 }
