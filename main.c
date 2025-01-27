@@ -3,7 +3,23 @@
 int main () {
 
     SetConsoleOutputCP(CP_UTF8);
+    srand(time(NULL));
     char InputBuffer[1024];
+
+    printf("Press 0 to play game, press 1 to load from file\n");
+    int FileCheck = 2;
+    while (FileCheck != 48 && FileCheck != 49) {
+        FileCheck = getch();
+    }
+
+    if (FileCheck == 49) {
+        printf("Enter file name:\n");
+        scanf("%s", InputBuffer);
+        FILE *Stream = fopen(InputBuffer, "r");
+
+        game_from_file(Stream);
+        return EXIT_SUCCESS;
+    }
 
     printf("Select difficulty:\n0 - EASY, 1 - NORMAL, 2 - HARD, 3 - CUSTOM\n");
     int Difficulty = 0;
@@ -83,16 +99,18 @@ int main () {
     
     flag_cell(&Board->Cells[0]);
     */
+    system("cls");
     print_board(Board);
 
-    score (Board, Difficulty);
+    int CurrentScore = score (Board, Difficulty);
     ///////////////////////////////////////////////////////////////////////////
+    char name[50];
     int tmp;
 
     while (HowManyToEnd(Board, Difficulty) < Board->Height * Board->Width - MineCount){
         int mode = 0;
         while (mode == 0){
-            printf("Enter mode (r - move, f - flag):\n");
+            printf("Enter mode: (r to mine; f to flag)\n");
             tmp = getch();
             if (tmp == 114){
                 mode = 1;
@@ -122,25 +140,34 @@ int main () {
 
         if (mode == 1) {
             if (make_move(Board, Row, Column) == 1){
-                printf("[!] This cell contains a bomb!\n");
+                system("cls");
+                printf("Game over!\n");
+                CurrentScore = score (Board, Difficulty);
+                int EndScore = HowManyToEnd(Board, Difficulty)*(Difficulty-47);
+                printf("Your current score: %u\n", CurrentScore);
+                for (int i = 0; i < Board->Height * Board->Width; i++) {
+                    if (Board->Cells[i].bRevealed == false) {
+                        Board->Cells[i].bRevealed = true;
+                    }
+                }
                 print_board(Board);
-                score(Board, Difficulty);
+                best_results(EndScore);
                 break;
             }
         } else if (mode == 2) {
             flag_mode(Board, Column, Row);
         }
 
+        system("cls");
         print_board(Board);
-        score(Board, Difficulty);
+        CurrentScore = score (Board, Difficulty);
+        printf("Your current score: %u\n", CurrentScore);
     }
 
     if (HowManyToEnd(Board, Difficulty) == Board->Height * Board->Width - MineCount){
         Board->bWin = true;
+        best_results(HowManyToEnd(Board, Difficulty)*(Difficulty-47));
     }
-
-    //write_to_file(Board, HowManyToEnd(Board, Difficulty));
-    best_results(HowManyToEnd(Board, Difficulty)*(Difficulty-47));
 
     ///////////////////////////////////////////////////////////////////////////
 
@@ -149,4 +176,3 @@ int main () {
     return EXIT_SUCCESS;
 
 }
-
